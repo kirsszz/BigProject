@@ -11,6 +11,9 @@ const ExpressError = require('./utils/ExpressError');
 const mongoose = require('mongoose');
 const Campground = require('./models/campground.js');
 const Review = require('./models/review');
+const passport = require('passport');
+const LocalStrategy = require('passport-local');
+const User = require('./models/user');
 
 const campgrounds = require('./routes/campgrounds');
 const reviews = require('./routes/reviews');
@@ -48,11 +51,24 @@ const sessionconfig = {
 }
 app.use(session(sessionconfig));
 app.use(flash());
+passport.use(new LocalStrategy(User.authenticate()));
+
+passport.serializeUser(User.serializeUser());
+passport.deserializeUser(User.deserializeUser());
+
+app.use(passport.initialize());
+app.use(passport.session());
 
 app.use((req, res, next) => {
     res.locals.success = req.flash('success');
     res.locals.error = req.flash('error');
     next();
+})
+
+app.get('/fakeUser', async (req, res) => {
+    const user = new User({ email: 'a@a.ee', username: 'aaaa' });
+    const newUser = await User.register(user, 'monkey');
+    res.send(newUser);
 })
 
 app.use('/campgrounds', campgrounds);
